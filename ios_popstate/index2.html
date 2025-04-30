@@ -11,6 +11,31 @@
     </main>
     <script>
       (function (window, document) {
+
+        function replaceMarkerState() {
+          // 1. 現在のstateを取得
+          const currentState = history.state;
+
+          // 2. 新しいstateオブジェクトを作成 (既存stateとマーカーをマージ)
+          //    スプレッド構文(...)で currentState が null や undefined でも安全に展開できる
+          const newMarkerState = {
+            ...currentState,
+            isMarker: 'dummy' // 表示用のマーカー
+          };
+
+          const currentUrl = location.href; // 現在のURL
+
+          try {
+            // 3. pushStateで新しい履歴エントリを追加
+            history.replaceState(newMarkerState, document.title, currentUrl);
+            console.log('Marker state replaced:', newMarkerState);
+          } catch (e) {
+            console.error('Failed to replace state:', e);
+            // stateオブジェクトが大きすぎるなどの場合に例外が発生する可能性がある [5, 6]
+          }
+        }
+        replaceMarkerState();
+
         /**
          * 既存のhistory.stateを保持しつつ、モーダル表示用マーカーを追加して
          * 新しい履歴エントリをpushする関数
@@ -23,14 +48,14 @@
           //    スプレッド構文(...)で currentState が null や undefined でも安全に展開できる
           const newMarkerState = {
             ...currentState,
-            isMarker: true // 表示用のマーカー
+            isMarker: 'push' // 表示用のマーカー
           };
 
           const currentUrl = location.href; // 現在のURL
 
           try {
             // 3. pushStateで新しい履歴エントリを追加
-            history.pushState(newMarkerState, '', currentUrl);
+            history.pushState(newMarkerState, document.title, currentUrl);
             console.log('Marker state pushed:', newMarkerState);
           } catch (e) {
             console.error('Failed to push state:', e);
@@ -50,18 +75,8 @@
           console.log('Popstate event:', event.state);
 
           // event.stateが存在し、かつマーカーがあるかチェック
-          if (event.state && event.state.isMarker) {
+          if (event.state && event.state.isMarker === 'dummy') {
             console.log('Browser back detected with marker.');
-
-            // ★重要：再度マーカー付きのstateをpushして、実際のページ遷移を防ぐ
-            // この際も、popstateで受け取ったstate (event.state) をベースにするのが確実
-            const currentUrl = location.href;
-            try {
-              history.pushState(event.state, '', currentUrl);
-              console.log('Marker state re-pushed to prevent navigation.');
-            } catch (e) {
-              console.error('Failed to re-push state:', e);
-            }
 
           } else {
             console.log('Normal history navigation or initial state.');
