@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+  <meta charset="utf-8" />
+  <title>ios_popstate</title>
+  </head>
+  <body>
+    <main>
+      <p>ios_popstate</p>
+      <button id="pushStateClick">クリック</button>
+    </main>
+    <script>
+      (function (window, document) {
+        /**
+         * 既存のhistory.stateを保持しつつ、モーダル表示用マーカーを追加して
+         * 新しい履歴エントリをpushする関数
+         */
+        function pushMarkerState() {
+          // 1. 現在のstateを取得
+          const currentState = history.state;
+
+          // 2. 新しいstateオブジェクトを作成 (既存stateとマーカーをマージ)
+          //    スプレッド構文(...)で currentState が null や undefined でも安全に展開できる
+          const newMarkerState = {
+            ...currentState,
+            isMarker: true // 表示用のマーカー
+          };
+
+          const currentUrl = location.href; // 現在のURL
+
+          try {
+            // 3. pushStateで新しい履歴エントリを追加
+            history.pushState(newMarkerState, '', currentUrl);
+            console.log('Marker state pushed:', newMarkerState);
+          } catch (e) {
+            console.error('Failed to push state:', e);
+            // stateオブジェクトが大きすぎるなどの場合に例外が発生する可能性がある [5, 6]
+          }
+        }
+
+        var elem = document.getElementById('pushStateClick');
+        if (elem) {
+          elem.addEventListener('click', function () {
+              pushMarkerState();
+          });
+        }
+
+        // --- popstateイベントリスナー ---
+        window.addEventListener('popstate', function(event) {
+          console.log('Popstate event:', event.state);
+
+          // event.stateが存在し、かつマーカーがあるかチェック
+          if (event.state && event.state.isMarker) {
+            console.log('Browser back detected with marker.');
+
+            // ★重要：再度マーカー付きのstateをpushして、実際のページ遷移を防ぐ
+            // この際も、popstateで受け取ったstate (event.state) をベースにするのが確実
+            const currentUrl = location.href;
+            try {
+              history.pushState(event.state, '', currentUrl);
+              console.log('Marker state re-pushed to prevent navigation.');
+            } catch (e) {
+              console.error('Failed to re-push state:', e);
+            }
+
+          } else {
+            console.log('Normal history navigation or initial state.');
+            // マーカーがない場合、または state が null の場合
+            // 必要に応じて event.state (元のstate情報が含まれている可能性がある) を
+            // 使ってページの表示内容を復元する処理などをここに記述
+            // 例: updatePageContent(event.state);
+          }
+        });
+
+      })(window, document);
+    </script>
+  </body>
+</html>
